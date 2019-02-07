@@ -2,11 +2,13 @@ import React, { Component } from 'react';
 import '../App.css';
 import { connect } from 'react-redux';
 import { handleSignUser } from '../actions/signedUser';
+import { Redirect } from 'react-router-dom';
 
 class Signin extends Component {
 
     state = {
-        userId: null
+        userId: null,
+        isLoggedIn: false
     }
 
     handleChange = (e) => {
@@ -22,10 +24,17 @@ class Signin extends Component {
 
         const { dispatch } = this.props;
         dispatch(handleSignUser(this.state.userId));
+        this.setState({
+            isLoggedIn: true
+        })
     }
     
     render() {
-        console.log(this.props.users);
+
+        if (this.state.isLoggedIn) {
+            return <Redirect to="/" />
+        }
+
         return (
             <div className="signin-card">
                 <div className="sign-header-section">
@@ -34,6 +43,7 @@ class Signin extends Component {
 
                 <h3 style={{marginTop: 200}}>Sign In</h3>
                 <select className="select-user" onChange={this.handleChange}>
+                <option value="">--Please select an user--</option>
                     {
                         this.props.users.map(user => (
                             <option key={user.id} value={user.id}> 
@@ -49,13 +59,10 @@ class Signin extends Component {
     }
 }
 
-function mapStateToProps({ users, signedUser }) {
-
-    signedUser = 'tylermcginnis'
+function mapStateToProps({ users }) {
 
     return {
-        users: Object.keys(users).map(key => users[key]),
-        signedUser: signedUser
+        users: Object.keys(users).map(key => users[key])
     }
 }
 

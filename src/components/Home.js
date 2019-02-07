@@ -1,54 +1,143 @@
 import React from 'react';
 import { connect } from 'react-redux';
 
+import QuestionCard from './QuestionCard';
+import Signin from './Signin';
+
 class Home extends React.Component {
 
-    handleUnanswered = () => {
+    state = {
+        unanswered: true,
+        answered: false
+    }
 
+    handleUnanswered = () => {
+        this.setState({
+            unanswered: true,
+            answered: false
+        });
     }
 
     handleAnswered = () => {
-
+        this.setState({
+            unanswered: false,
+            answered: true
+        });
     }
 
     render() {
 
-        const { questions, users } = this.props;
+        const { unansweredQuestions, answeredQuestions, users, signedUser } = this.props;
+        
+        if (signedUser === null) {
+            return <Signin />
+        }
 
-        console.log(this.props.questions);
         return (
-            <div className="home">
-                <div className="home-header">
-                    <h4 style={{marginLeft: 30, height: 40, marginTop: 40}} onClick={this.handleUnanswered}>Unanswered Questions</h4>
-                    <h4 style={{marginLeft: 100, height: 40, marginTop: 40}} onClick={this.handleAnswered}>Answered Questions</h4>
-                </div>
-                <div className="">
-                    <ul className="list">
-                        {
-                            questions.map((question) => (
-                                <li key={question.id} className="list-poll">
-                                    <h3>{question.author} asks:</h3>
-                                    <img className="avatar" alt="useravatar" src={users[question.author].avatarURL}/>
-                                    <div>
-                                        <h3>Would you rather</h3>
-                                        <p>{question.optionOne.text}</p>
-                                    </div>
-                                    <button style={{marginBottom: 20}}>View Poll</button>
-                                </li>
-                            ))
+            <div>
+                <div className="home">
+                    <div className="home-header">
+                        {this.state.unanswered === true
+                            ? <div className="unanswered-container" onClick={this.handleUnanswered}><h4 className="header-selected">Unanswered Questions</h4></div>
+                            : <div className="unanswered-container" onClick={this.handleUnanswered}><h4>Unanswered Questions</h4></div>
                         }
-                    </ul>
+                        {this.state.answered === true
+                            ? <div className="answered-container" onClick={this.handleAnswered}><h4 className="header-selected">Answered Questions</h4></div>
+                            : <div className="answered-container" onClick={this.handleAnswered}><h4>Answered Questions</h4></div>
+                        }
+                        
+                    </div>
+                    <div className="">
+                        {this.state.unanswered === true
+                            ? (
+                            <div>
+                                <ul className="list">
+                                    {
+                                        unansweredQuestions.map((question, index) => {
+                                            if (question.optionOne.votes.includes(signedUser) === false) {
+                                                return (
+                                                    <div key={question.id}>
+                                                        <QuestionCard key={index} question={question} option={question.optionOne} users={users} />
+                                                    </div>
+                                                );
+                                            } 
+                                            return true;
+                                        })
+                                    }
+                                </ul>
+                            </div>
+                            )
+                            : (
+                                <div>
+                                    <ul className="list">
+                                        {
+                                            answeredQuestions.map((question, index) => {
+                                                
+                                                if (question.optionOne.votes.includes(signedUser)) {
+                                                    return (
+                                                        <QuestionCard key={question.id} question={question} option={question.optionOne} users={users} />
+                                                    );
+                                                } 
+                                                return true;
+                                            })
+                                        }
+                                    </ul>
+                                    <ul className="list">
+                                    {
+                                        answeredQuestions.map((question, index) => {
+                                            if (question.optionTwo.votes.includes(signedUser)) {
+                                                return (
+                                                    <QuestionCard key={index} question={question} option={question.optionTwo} users={users} />
+                                                );
+                                            }
+
+                                            return true;
+                                        }) 
+                                    }
+                                </ul>
+                                </div>
+                            )
+                        }
+                        
+                    </div>
                 </div>
             </div>
         );
     }
 }
 
-function mapStateToProps({ questions, users }) {
+function mapStateToProps({ questions, users, signedUser }) {
+
+    let questionsArray = Object.keys(questions).map(key => questions[key]);
+    let answersArray = [];
+    let questionsSet = new Set(questionsArray);
+
+    if (signedUser !== null) {
+
+        answersArray = Object.keys(users[signedUser].answers).map(key => {
+            return questions[key]
+        });
+
+        answersArray.map((aQuestion) => {
+            return questionsSet.delete(aQuestion);
+        });
+    }
+
+    let unansweredQuestions = [...questionsSet];
+
+    if (answersArray) {
+        answersArray.sort((a, b) => b.timestamp - a.timestamp);
+    }
+
+    if (unansweredQuestions) {
+        unansweredQuestions.sort((a, b) => b.timestamp - a.timestamp);
+    }
     
     return {
-        questions: Object.keys(questions).map((key) => questions[key]),
-        users: users
+        users: users,
+        signedUser,
+        answeredQuestions: answersArray,
+        unansweredQuestions: unansweredQuestions,
     }
 }
 
